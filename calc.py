@@ -32,13 +32,13 @@ class Stock(object):
             self.daily_SD[i] = raw_data['Adj Close'].std()
             self.expect_RE[i] = (raw_data['Adj Close'][-1] - raw_data['Adj Close'][0])/raw_data['Adj Close'][0]
             self.cost[i] = raw_data['Adj Close'][-1]*100
-        for i in np.argsort(self.expect_RE):
-        	print(self.stock_dir_list[i])
-        print(np.argsort(self.expect_RE))
-        print(self.daily_SD)
+        #for i in np.argsort(self.expect_RE):
+        #	print(self.stock_dir_list[i])
+        #print(np.argsort(self.expect_RE))
+        #print(self.daily_SD)
 
-def solve_modle(list_receive,value,list_SD,goals):
-    #receive是每天的收盘价，value是增长率数列，SD是方差序列
+def solve_modle(list_receive,value,list_SD,goals,list_name):
+    #receive是每天的收盘价，value是增长率数列，SD是方差序列,goals是期望收益,求解二次规划
     Q=2*matrix(np.array(list_receive.swapaxes(0,1).cov()))#.values.tolist())
     assert np.all(np.linalg.eigvals(np.array(Q)) > 0), '正定'
     #print(Q)
@@ -49,7 +49,9 @@ def solve_modle(list_receive,value,list_SD,goals):
     b=matrix(np.ones(1))
     print('Q:',Q,'p:',p,'G:',G,'h:',h,'A',A,'b:',b)
     sol=solvers.qp(Q,p,G,h,A,b)
-    print(sol['x'])
+    ans=np.array(sol['x'])
+    for i in range(len(list_receive)):
+        print(list_name[i],ans[i])
 
 
 ss = Stock()
@@ -60,22 +62,15 @@ l=np.argsort(ss.expect_RE)[::-1]
 tmp=[]
 list_value=[]
 list_SD=[]
-for i in l[5:15]:
+list_name=[]
+for i in range(10):
     tmp.append(ss.whole_data[int(l[i])])
     list_value.append(ss.expect_RE[int(l[i])])
     list_SD.append(ss.daily_SD[int(l[i])])
+    list_name.append(ss.stock_dir_list[int(l[i])][:-7])
+#print(list_name)
 #print([ss.stock_dir_list[i][:-7] for i in l[:10]])
 list_stock=pd.DataFrame(tmp)#,columns=[ss.stock_dir_list[i][:-7] for i in l[:10]])
-print(list_stock.T.cov())#.values.tolist())
+#print(list_stock.T.cov())#.values.tolist())
 #print(np.array(- matrix(list_value)).T.shape)
-solve_modle(list_stock,list_value,list_SD,0.2)
-#print(np.array([- np.array(list_value),np.ones(len(list_value))]))
-#print(list_stock.swapaxes(0,1).cov().tolist())
-
-
-
-
-#print(ss.stock_dir_list[i][:-7])
-#tmp=pd.DataFrame(ss.whole_data[int(l[i])],columns=[ss.stock_dir_list[0][:-7]])
-
-#sh_return=pd.concat([ss.whole_data[30],ss.whole_data[34],ss.whole_data[38]],axis=1)
+solve_modle(list_stock,list_value,list_SD,0.2,list_name)
